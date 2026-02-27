@@ -1,3 +1,4 @@
+fetch("medidores.json")
 function buscar(){
   const termo = document.getElementById("search").value;
   const lista = document.getElementById("results");
