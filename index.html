@@ -29,11 +29,8 @@
     </div>
 
     <script>
-        // O seu link original do Google
+        // Link direto oficial do Google
         const LINK_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTy-YQx7XePcl-088M2dO31mTYx6aliSXNX6YFdhZ4w1Cc-U9UnUEq1VhaD9dymXIkfk3yt69F9bqU8/pub?output=csv"; 
-        
-        // O Proxy gratuito que burla o bloqueio de segurança do navegador
-        const PROXY_URL = "https://api.allorigins.win/raw?url=" + encodeURIComponent(LINK_CSV);
 
         const input = document.getElementById('inputMedidor');
         const lista = document.getElementById('listaResultados');
@@ -45,7 +42,77 @@
         async function carregarCSV() {
             input.disabled = true;
             try {
-                // Agora o fetch chama o Proxy em vez do Google diretamente
-                const resposta = await fetch(PROXY_URL);
+                // Adicionamos um número aleatório leve só para garantir dados frescos
+                const resposta = await fetch(LINK_CSV + "&v=" + Math.random());
                 
-                if (!resposta.
+                if (!resposta.ok) throw new Error("Erro no Google");
+
+                const textoCSV = await resposta.text();
+                const linhas = textoCSV.split(/\r?\n/);
+                const separador = linhas[0].includes(';') ? ';' : ',';
+                
+                bancoDeMedidores = []; 
+                
+                for (let i = 1; i < linhas.length; i++) {
+                    if (linhas[i].trim() === '') continue;
+                    const colunas = linhas[i].split(separador);
+                    if (colunas.length >= 3) {
+                        bancoDeMedidores.push({
+                            numero: colunas[0].trim().replace(/['"]/g, ''),
+                            lat: colunas[1].trim().replace(/['"]/g, ''),
+                            lng: colunas[2].trim().replace(/['"]/g, '')
+                        });
+                    }
+                }
+
+                aviso.textContent = `✅ Banco pronto! (${bancoDeMedidores.length} medidores).`;
+                input.disabled = false;
+                input.focus();
+
+            } catch (erro) {
+                aviso.textContent = '❌ O celular bloqueou a conexão. O site precisa estar hospedado na internet.';
+            }
+        }
+
+        carregarCSV();
+
+        input.addEventListener('input', function(e) {
+            let valor = this.value.replace(/\D/g, ''); 
+            this.value = valor;
+            lista.innerHTML = ''; 
+
+            if (valor.length >= 5) {
+                aviso.style.display = 'none';
+                const resultados = bancoDeMedidores.filter(medidor => medidor.numero.endsWith(valor));
+
+                if (resultados.length === 0) {
+                    aviso.style.display = 'block';
+                    aviso.textContent = 'Nenhum medidor encontrado com este final.';
+                    return;
+                }
+
+                resultados.forEach(medidor => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span>Medidor: <strong>${medidor.numero}</strong></span> <span class="icon-map">📍</span>`;
+                    li.onclick = function() {
+                        const urlMaps = `https://www.google.com/maps/search/?api=1&query=${medidor.lat},${medidor.lng}`;
+                        window.open(urlMaps, '_blank');
+                    };
+                    lista.appendChild(li);
+                });
+            } else {
+                aviso.style.display = 'block';
+                aviso.textContent = `Faltam ${5 - valor.length} dígito(s) para buscar.`;
+            }
+        });
+
+        btnLimpar.addEventListener('click', function() {
+            input.value = '';
+            lista.innerHTML = '';
+            aviso.style.display = 'block';
+            aviso.textContent = `✅ Banco pronto! (${bancoDeMedidores.length} medidores).`;
+            input.focus();
+        });
+    </script>
+</body>
+</html>
