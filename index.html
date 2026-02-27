@@ -1,22 +1,65 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Busca de Medidores</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-body { font-family: Arial, sans-serif; padding:20px; }
-input { width:100%; padding:10px; font-size:18px; }
-ul { list-style:none; padding:0; }
-li { padding:10px; border-bottom:1px solid #ccc; }
-button { padding:8px 12px; margin-top:5px; }
-</style>
+  <meta charset="UTF-8">
+  <title>Localizar Medidor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 10px 15px;
+      font-size: 16px;
+      margin: 5px 0;
+    }
+    .status {
+      margin: 10px 0;
+      font-weight: bold;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      background: #fff;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+  </style>
 </head>
 <body>
-<div id="status">Carregando medidores...</div>
-<input id="search" disabled>
+
+<h1>📍 Localizar Medidor</h1>
+
+<div class="status" id="status">Carregando medidores...</div>
+
+<input 
+  type="number" 
+  id="search" 
+  placeholder="Digite pelo menos 4 números do medidor"
+  disabled
+>
+
+<button onclick="limparBusca()">Limpar</button>
+
 <ul id="results"></ul>
+
 <script src="script.js"></script>
 </body>
 </html>
+
 
