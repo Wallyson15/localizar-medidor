@@ -21,6 +21,9 @@
             --text-muted: #64748b;
             --border: #e2e8f0;
             --success: #10b981;
+            --export: #8b5cf6; 
+            --export-hover: #7c3aed;
+            --danger: #ef4444;
         }
 
         body { 
@@ -45,177 +48,51 @@
             max-width: 450px; 
         }
 
-        .header-title {
-            margin-top: 0;
-            margin-bottom: 5px;
-            font-size: 1.5rem;
-            color: var(--text-main);
-            text-align: center;
-        }
+        .header-title { margin-top: 0; margin-bottom: 5px; font-size: 1.5rem; text-align: center; }
+        .header-subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; text-align: center; }
 
-        .header-subtitle {
-            color: var(--text-muted);
-            font-size: 0.95rem;
-            margin-bottom: 25px;
-            text-align: center;
-        }
-
-        select {
-            padding: 12px;
-            font-size: 15px;
-            width: 100%;
-            margin-bottom: 10px;
-            border: 2px solid var(--border);
-            border-radius: 10px;
-            font-weight: 600;
-            color: var(--text-main);
-            outline: none;
-            background-color: var(--surface);
-            cursor: pointer;
-            transition: border-color 0.3s ease;
+        select, input { 
+            padding: 12px; font-size: 15px; width: 100%; margin-bottom: 10px; 
+            border: 2px solid var(--border); border-radius: 10px; font-weight: 600;
+            outline: none; box-sizing: border-box;
         }
         
-        select:focus { border-color: var(--primary); }
+        input:focus, select:focus { border-color: var(--primary); }
 
-        .input-group { position: relative; margin-bottom: 15px; }
-
-        input { 
-            padding: 14px; 
-            font-size: 16px; 
-            width: 100%; 
-            box-sizing: border-box;
-            border: 2px solid var(--border); 
-            border-radius: 10px; 
-            text-align: center;
-            transition: all 0.3s ease;
-            outline: none;
-            font-weight: 600;
-            letter-spacing: 1px;
-            color: var(--text-main);
-        }
-
-        input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
-        }
-
-        .botoes-grupo {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
+        .botoes-grupo { display: flex; gap: 10px; margin-bottom: 10px; }
 
         button { 
-            padding: 14px 16px; 
-            font-size: 16px; 
-            border: none; 
-            border-radius: 10px; 
-            cursor: pointer; 
-            font-weight: 600;
-            transition: all 0.2s ease;
+            padding: 14px 16px; font-size: 16px; border: none; border-radius: 10px; 
+            cursor: pointer; font-weight: 600; transition: all 0.2s ease;
         }
 
         button:active { transform: scale(0.98); }
-
-        .btn-buscar {
-            background-color: var(--primary); 
-            color: white; 
-            flex: 2; 
-            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
-        }
-        .btn-buscar:hover { background-color: var(--primary-hover); }
-
+        .btn-buscar { background-color: var(--primary); color: white; flex: 2; }
         .btn-limpar { background-color: var(--secondary); color: var(--text-main); flex: 1; }
-        .btn-limpar:hover { background-color: var(--secondary-hover); }
         
-        #mensagem { 
-            margin-top: 15px; 
-            font-size: 14px; 
-            font-weight: 600; 
-            min-height: 20px;
-            text-align: center;
-        }
-        
-        #listaResultados {
-            margin-top: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
+        .btn-exportar { background-color: var(--export); color: white; width: 100%; margin-bottom: 8px; }
+        .btn-esvaziar { background-color: #fee2e2; color: var(--danger); width: 100%; font-size: 13px; padding: 8px; }
+
+        #mensagem { margin-top: 15px; font-size: 14px; font-weight: 600; min-height: 20px; text-align: center; }
+        #listaResultados { margin-top: 20px; display: flex; flex-direction: column; gap: 15px; }
 
         .item-medidor {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            padding: 18px;
-            border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-            animation: fadeIn 0.4s ease forwards;
+            background: var(--surface); border: 1px solid var(--border);
+            padding: 18px; border-radius: 12px; animation: fadeIn 0.4s ease forwards;
         }
 
         .cabecalho-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 12px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
         }
 
-        .info-principal .info-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-muted);
-            font-weight: 700;
-            display: block;
-            margin-bottom: 2px;
-        }
+        .info-numero { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+        .info-label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; display: block; }
 
-        .info-principal .info-numero {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
+        .btn-add-lista { background: var(--primary); color: white; padding: 8px 12px; font-size: 12px; border-radius: 8px; }
+        .btn-mapa { background-color: var(--success); color: white; text-decoration: none; padding: 8px 12px; border-radius: 8px; font-size: 14px; }
 
-        .detalhes-secundarios {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            font-size: 0.9rem;
-            color: var(--text-main);
-        }
-
-        .detalhes-secundarios span strong {
-            color: var(--text-muted);
-            font-weight: 600;
-        }
-
-        .badge-duplo {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 5px;
-        }
-
-        .btn-mapa {
-            background-color: var(--success);
-            color: white;
-            text-decoration: none;
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: background-color 0.2s ease;
-        }
-
-        .btn-mapa:hover { background-color: #059669; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -223,21 +100,23 @@
 
     <div class="container">
         <h2 class="header-title">📍 Localizador</h2>
-        <p class="header-subtitle">Encontre equipamentos em campo</p>
+        <p class="header-subtitle">Encontre e monte sua rota</p>
         
-        <select id="tipoBusca" onchange="atualizarPlaceholder()">
-            <option value="numero">Buscar por: Nº do Medidor</option>
-            <option value="PG">Buscar por: ID do Poste (PG)</option> 
+        <select id="tipoBusca">
+            <option value="numero">Nº do Medidor</option>
+            <option value="PG">ID do Poste (PG)</option> 
+            <option value="MRU">MRU</option> 
         </select>
 
-        <div class="input-group">
-            <input type="text" id="inputBusca" placeholder="Ex: 45072 (Dígitos finais)" autocomplete="off">
-        </div>
+        <input type="text" id="inputBusca" placeholder="Ex: 45072" autocomplete="off">
         
         <div class="botoes-grupo">
-            <button class="btn-buscar" onclick="buscarDados()">Buscar</button>
-            <button class="btn-limpar" onclick="limparBusca()">Limpar</button>
+            <button id="btnBuscar" class="btn-buscar">Buscar</button>
+            <button id="btnLimpar" class="btn-limpar">Limpar</button>
         </div>
+        
+        <button id="btnExportar" class="btn-exportar">🗺️ Baixar Arquivo My Maps</button>
+        <button id="btnEsvaziar" class="btn-esvaziar">🗑️ Limpar Lista Salva</button>
         
         <div id="mensagem"></div>
         <div id="listaResultados"></div> 
@@ -246,112 +125,12 @@
     <script>
         const supabaseUrl = 'https://hprrnzotddltordqwjui.supabase.co'; 
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwcnJuem90ZGRsdG9yZHF3anVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MzExNTMsImV4cCI6MjA4ODMwNzE1M30.TU5clfW2ce0iku1Vo4oNa34G920lyJvwJ8TJscklI8s';
-        const clienteSupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        const clienteSupabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-        function atualizarPlaceholder() {
-            const tipo = document.getElementById('tipoBusca').value;
-            const input = document.getElementById('inputBusca');
-            if (tipo === 'numero') {
-                input.placeholder = "Ex: 45072 (Dígitos finais)";
-            } else {
-                input.placeholder = "Ex: PG1234 (ID do Poste)";
-            }
-            input.focus();
-        }
+        // --- FUNÇÕES DA CESTA DE EXPORTAÇÃO ---
 
-        async function buscarDados() {
-            const input = document.getElementById('inputBusca').value.trim();
-            const tipoBusca = document.getElementById('tipoBusca').value; 
+        function adicionarParaLista(item) {
+            let listaFila = JSON.parse(localStorage.getItem('filaMyMaps')) || [];
             
-            const divMensagem = document.getElementById('mensagem');
-            const divResultados = document.getElementById('listaResultados');
-
-            divResultados.innerHTML = '';
-
-            if (!input) {
-                divMensagem.innerHTML = "<span style='color: #ef4444;'>Por favor, digite o que deseja buscar.</span>";
-                return;
-            }
-
-            divMensagem.innerHTML = "<span style='color: var(--primary);'>Buscando no banco de dados... ⏳</span>";
-
-            try {
-                // NOVA LÓGICA DE BUSCA AQUI
-                let padraoBusca = '';
-                if (tipoBusca === 'numero') {
-                    // Busca apenas no FINAL do número
-                    padraoBusca = `%${input}`; 
-                } else {
-                    // Busca em QUALQUER LUGAR (PG)
-                    padraoBusca = `%${input}%`; 
-                }
-
-                const { data, error } = await clienteSupabase
-                    .from('medidores') 
-                    .select('numero, lat, lng, Rua, PG, MRU')
-                    .ilike(tipoBusca, padraoBusca); 
-
-                if (error) throw error;
-
-                if (data && data.length > 0) {
-                    divMensagem.innerHTML = `<span style='color: var(--success);'>${data.length} resultado(s) encontrado(s)! ✅</span>`;
-                    
-                    let htmlLista = '';
-                    
-                    data.forEach(item => {
-                        let lat = String(item.lat).replace(',', '.');
-                        let lng = String(item.lng).replace(',', '.');
-                        
-                        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-                        
-                        let enderecoTexto = item.Rua ? item.Rua : "Não informado";
-                        let pgTexto = item.PG ? item.PG : "N/D";
-                        let mruTexto = item.MRU ? item.MRU : "N/D";
-                        
-                        htmlLista += `
-                            <div class="item-medidor">
-                                <div class="cabecalho-card">
-                                    <div class="info-principal">
-                                        <span class="info-label">Medidor</span>
-                                        <span class="info-numero">${item.numero}</span>
-                                    </div>
-                                    <a href="${mapsUrl}" target="_blank" class="btn-mapa">🗺️ Mapa</a>
-                                </div>
-                                <div class="detalhes-secundarios">
-                                    <div class="badge-duplo">
-                                        <span><strong>PG:</strong> ${pgTexto}</span>
-                                        <span><strong>MRU:</strong> ${mruTexto}</span>
-                                    </div>
-                                    <span><strong>Rua:</strong> ${enderecoTexto}</span>
-                                </div>
-                            </div>
-                        `;
-                    });
-
-                    divResultados.innerHTML = htmlLista;
-                    
-                } else {
-                    divMensagem.innerHTML = "<span style='color: #f59e0b;'>Nenhum resultado encontrado. ❌</span>";
-                }
-            } catch (err) {
-                console.error("Erro na busca:", err);
-                divMensagem.innerHTML = "<span style='color: #ef4444;'>Erro ao conectar com o banco de dados.</span>";
-            }
-        }
-        
-        function limparBusca() {
-            document.getElementById('inputBusca').value = '';
-            document.getElementById('mensagem').innerHTML = '';
-            document.getElementById('listaResultados').innerHTML = '';
-            document.getElementById('inputBusca').focus();
-        }
-
-        document.getElementById('inputBusca').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                buscarDados();
-            }
-        });
-    </script>
-
-</body>
-</html>
+            // Evita duplicados
+            if (listaFila.some(m => m.numero === item.numero))
