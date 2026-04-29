@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Localizador de Medidores</title>
+    <title>Localizador & Exportador My Maps</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,7 +21,7 @@
             --text-muted: #64748b;
             --border: #e2e8f0;
             --success: #10b981;
-            --warning: #f59e0b;
+            --accent: #7c3aed;
         }
 
         body { 
@@ -83,6 +83,21 @@
             margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-exportar {
+            background: var(--accent);
+            color: white;
+            padding: 8px 12px;
+            font-size: 12px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 10px;
+            width: 100%;
+            justify-content: center;
         }
 
         #listaResultados, #listaSalvos {
@@ -96,7 +111,6 @@
             border: 1px solid var(--border);
             padding: 15px;
             border-radius: 12px;
-            position: relative;
             box-shadow: 0 2px 4px rgba(0,0,0,0.02);
         }
 
@@ -137,14 +151,18 @@
 
     <div class="container">
         <h2 class="header-title">📍 Localizador</h2>
-        <p class="header-subtitle">Busque e salve medidores importantes</p>
+        <p class="header-subtitle">Busque e exporte para o My Maps</p>
         
         <div id="containerSalvos" class="secao-salvos" style="display: none;">
             <div class="salvos-titulo">
-                <span>⭐ Medidores Salvos</span>
+                <span>⭐ Selecionados para Mapa</span>
                 <span style="cursor:pointer; color:#ef4444" onclick="limparTudoSalvo()">Limpar</span>
             </div>
             <div id="listaSalvos"></div>
+            
+            <button class="btn-exportar" onclick="exportarParaCSV()">
+                📥 Baixar CSV para My Maps
+            </button>
         </div>
 
         <select id="tipoBusca" onchange="document.getElementById('inputBusca').focus()">
@@ -184,7 +202,7 @@
             try {
                 let padrao = tipoBusca === 'numero' ? `%${input}` : `%${input}%`;
                 const { data, error } = await clienteSupabase.from('medidores')
-                    .select('*').ilike(tipoBusca, padrao).limit(10);
+                    .select('*').ilike(tipoBusca, padrao).limit(15);
 
                 if (error) throw error;
 
@@ -197,7 +215,7 @@
                     divMsg.innerHTML = "⚠️ Nada encontrado.";
                 }
             } catch (err) {
-                divMsg.innerHTML = "❌ Erro na conexão.";
+                divMsg.innerHTML = "❌ Erro de conexão.";
             }
         }
 
@@ -206,7 +224,6 @@
             const lng = String(item.lng).replace(',', '.').trim();
             const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
             
-            // Transformamos o item em string para salvar no storage
             const itemString = JSON.stringify(item).replace(/"/g, '&quot;');
 
             return `
@@ -218,22 +235,21 @@
                                 ? `<button class="btn-acao btn-remover" onclick="removerMedidor('${item.numero}')">🗑️</button>`
                                 : `<button class="btn-acao btn-salvar" onclick="salvarMedidor('${itemString}')">⭐ Salvar</button>`
                             }
-                            <a href="${mapsUrl}" target="_blank" class="btn-acao btn-mapa">🗺️ Mapa</a>
+                            <a href="${mapsUrl}" target="_blank" class="btn-acao btn-mapa">🗺️</a>
                         </div>
                     </div>
                     <div class="detalhes">
                         <span class="badge-pg">PG: ${item.PG || 'N/D'}</span>
                         <span style="margin-left:10px">MRU: ${item.MRU || 'N/D'}</span><br>
-                        <div style="margin-top:5px; color:var(--text-muted)">📍 ${item.Rua || 'Rua não informada'}</div>
+                        <div style="margin-top:5px; color:var(--text-muted); font-size:11px;">📍 ${item.Rua || 'Rua não informada'}</div>
                     </div>
                 </div>
             `;
         }
 
         function salvarMedidor(itemJson) {
-            const item = JSON.parse(itemJson);
+            const item = JSON.parse(itemJson.replace(/&quot;/g, '"'));
             let salvos = JSON.parse(localStorage.getItem('medidoresSelecionados')) || [];
-            
             if (!salvos.some(s => s.numero === item.numero)) {
                 salvos.unshift(item);
                 localStorage.setItem('medidoresSelecionados', JSON.stringify(salvos));
@@ -252,14 +268,38 @@
             const salvos = JSON.parse(localStorage.getItem('medidoresSelecionados')) || [];
             const container = document.getElementById('containerSalvos');
             const lista = document.getElementById('listaSalvos');
-            
             if (salvos.length === 0) {
                 container.style.display = 'none';
                 return;
             }
-            
             container.style.display = 'block';
             lista.innerHTML = salvos.map(item => criarCard(item, true)).join('');
+        }
+
+        function exportarParaCSV() {
+            const salvos = JSON.parse(localStorage.getItem('medidoresSelecionados')) || [];
+            if (salvos.length === 0) return;
+
+            // Cabeçalho conforme seu exemplo
+            let csvContent = "Numero_Medidor,Latitude,Longitude,Rua,PG,MRU\n";
+
+            salvos.forEach(item => {
+                let lat = String(item.lat).replace(',', '.').trim();
+                let lng = String(item.lng).replace(',', '.').trim();
+                let rua = (item.Rua || "N/A").replace(/,/g, ''); // Remove vírgulas para não quebrar o CSV
+                
+                csvContent += `${item.numero},${lat},${lng},"${rua}",${item.PG || 'N/D'},${item.MRU || 'N/D'}\n`;
+            });
+
+            // Criar o download do arquivo
+            const blob = new Blob(["\ufeff", csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `medidores_my_maps_${new Date().getTime()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         function limparBusca() {
@@ -269,7 +309,7 @@
         }
 
         function limparTudoSalvo() {
-            if(confirm("Limpar todos os medidores salvos?")) {
+            if(confirm("Limpar lista de exportação?")) {
                 localStorage.removeItem('medidoresSelecionados');
                 renderizarSalvos();
             }
