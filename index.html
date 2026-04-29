@@ -127,6 +127,56 @@
 
         .btn-limpar { background-color: var(--secondary); color: var(--text-main); flex: 1; }
         .btn-limpar:hover { background-color: var(--secondary-hover); }
+
+        /* ESTILOS DO HISTÓRICO */
+        .historico-container {
+            margin-top: 20px;
+            border-top: 1px dashed var(--border);
+            padding-top: 15px;
+        }
+
+        .historico-titulo {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .lista-historico {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag-historico {
+            background: var(--secondary);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .tag-historico:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-limpar-hist {
+            background: none;
+            border: none;
+            color: #ef4444;
+            font-size: 0.7rem;
+            cursor: pointer;
+            padding: 0;
+            font-weight: 700;
+        }
         
         #mensagem { 
             margin-top: 15px; 
@@ -240,6 +290,15 @@
         </div>
         
         <div id="mensagem"></div>
+
+        <div class="historico-container" id="secaoHistorico" style="display: none;">
+            <div class="historico-titulo">
+                <span>Buscas Recentes</span>
+                <button class="btn-limpar-hist" onclick="limparHistorico()">Limpar</button>
+            </div>
+            <div id="listaHistorico" class="lista-historico"></div>
+        </div>
+
         <div id="listaResultados"></div> 
     </div>
 
@@ -248,16 +307,55 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwcnJuem90ZGRsdG9yZHF3anVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MzExNTMsImV4cCI6MjA4ODMwNzE1M30.TU5clfW2ce0iku1Vo4oNa34G920lyJvwJ8TJscklI8s';
         const clienteSupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+        // Inicializar histórico ao carregar a página
+        document.addEventListener('DOMContentLoaded', renderizarHistorico);
+
         function atualizarPlaceholder() {
             const tipo = document.getElementById('tipoBusca').value;
             const input = document.getElementById('inputBusca');
-            if (tipo === 'numero') {
-                input.placeholder = "Ex: 45072 (Dígitos finais)";
-            } else {
-                input.placeholder = "Ex: PG1234 (ID do Poste)";
-            }
+            input.placeholder = tipo === 'numero' ? "Ex: 45072 (Dígitos finais)" : "Ex: PG1234 (ID do Poste)";
             input.focus();
         }
+
+        // --- LÓGICA DO HISTÓRICO ---
+        function salvarNoHistorico(termo) {
+            let historico = JSON.parse(localStorage.getItem('historicoMedidores')) || [];
+            // Remove se já existir para evitar duplicados e coloca no topo
+            historico = historico.filter(item => item !== termo);
+            historico.unshift(termo);
+            // Mantém apenas os 8 últimos
+            if (historico.length > 8) historico.pop();
+            
+            localStorage.setItem('historicoMedidores', JSON.stringify(historico));
+            renderizarHistorico();
+        }
+
+        function renderizarHistorico() {
+            const historico = JSON.parse(localStorage.getItem('historicoMedidores')) || [];
+            const container = document.getElementById('secaoHistorico');
+            const lista = document.getElementById('listaHistorico');
+            
+            if (historico.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            
+            container.style.display = 'block';
+            lista.innerHTML = historico.map(termo => `
+                <span class="tag-historico" onclick="cliqueHistorico('${termo}')">${termo}</span>
+            `).join('');
+        }
+
+        function cliqueHistorico(termo) {
+            document.getElementById('inputBusca').value = termo;
+            buscarDados();
+        }
+
+        function limparHistorico() {
+            localStorage.removeItem('historicoMedidores');
+            renderizarHistorico();
+        }
+        // ---------------------------
 
         async function buscarDados() {
             const input = document.getElementById('inputBusca').value.trim();
@@ -269,22 +367,14 @@
             divResultados.innerHTML = '';
 
             if (!input) {
-                divMensagem.innerHTML = "<span style='color: #ef4444;'>Por favor, digite o que deseja buscar.</span>";
+                divMensagem.innerHTML = "<span style='color: #ef4444;'>Digite algo para buscar.</span>";
                 return;
             }
 
-            divMensagem.innerHTML = "<span style='color: var(--primary);'>Buscando no banco de dados... ⏳</span>";
+            divMensagem.innerHTML = "<span style='color: var(--primary);'>Buscando... ⏳</span>";
 
             try {
-                // NOVA LÓGICA DE BUSCA AQUI
-                let padraoBusca = '';
-                if (tipoBusca === 'numero') {
-                    // Busca apenas no FINAL do número
-                    padraoBusca = `%${input}`; 
-                } else {
-                    // Busca em QUALQUER LUGAR (PG)
-                    padraoBusca = `%${input}%`; 
-                }
+                let padraoBusca = tipoBusca === 'numero' ? `%${input}` : `%${input}%`;
 
                 const { data, error } = await clienteSupabase
                     .from('medidores') 
@@ -294,19 +384,18 @@
                 if (error) throw error;
 
                 if (data && data.length > 0) {
-                    divMensagem.innerHTML = `<span style='color: var(--success);'>${data.length} resultado(s) encontrado(s)! ✅</span>`;
+                    salvarNoHistorico(input); // Salva o termo buscado
+                    
+                    divMensagem.innerHTML = `<span style='color: var(--success);'>${data.length} resultado(s) ✅</span>`;
                     
                     let htmlLista = '';
                     
                     data.forEach(item => {
-                        let lat = String(item.lat).replace(',', '.');
-                        let lng = String(item.lng).replace(',', '.');
+                        let lat = String(item.lat).replace(',', '.').trim();
+                        let lng = String(item.lng).replace(',', '.').trim();
                         
+                        // URL CORRIGIDA DO MAPS
                         const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-                        
-                        let enderecoTexto = item.Rua ? item.Rua : "Não informado";
-                        let pgTexto = item.PG ? item.PG : "N/D";
-                        let mruTexto = item.MRU ? item.MRU : "N/D";
                         
                         htmlLista += `
                             <div class="item-medidor">
@@ -319,23 +408,22 @@
                                 </div>
                                 <div class="detalhes-secundarios">
                                     <div class="badge-duplo">
-                                        <span><strong>PG:</strong> ${pgTexto}</span>
-                                        <span><strong>MRU:</strong> ${mruTexto}</span>
+                                        <span><strong>PG:</strong> ${item.PG || 'N/D'}</span>
+                                        <span><strong>MRU:</strong> ${item.MRU || 'N/D'}</span>
                                     </div>
-                                    <span><strong>Rua:</strong> ${enderecoTexto}</span>
+                                    <span><strong>Rua:</strong> ${item.Rua || "Não informado"}</span>
                                 </div>
                             </div>
                         `;
                     });
 
                     divResultados.innerHTML = htmlLista;
-                    
                 } else {
-                    divMensagem.innerHTML = "<span style='color: #f59e0b;'>Nenhum resultado encontrado. ❌</span>";
+                    divMensagem.innerHTML = "<span style='color: #f59e0b;'>Nada encontrado. ❌</span>";
                 }
             } catch (err) {
-                console.error("Erro na busca:", err);
-                divMensagem.innerHTML = "<span style='color: #ef4444;'>Erro ao conectar com o banco de dados.</span>";
+                console.error("Erro:", err);
+                divMensagem.innerHTML = "<span style='color: #ef4444;'>Erro de conexão.</span>";
             }
         }
         
@@ -347,9 +435,7 @@
         }
 
         document.getElementById('inputBusca').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                buscarDados();
-            }
+            if (e.key === 'Enter') buscarDados();
         });
     </script>
 
