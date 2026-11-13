@@ -550,6 +550,14 @@
                 return;
             }
 
+            // Guarda a posição do cartão em que o usuário tocou para evitar
+            // que o aumento da lista de salvos desloque a tela.
+            const cartaoAlvo = [...document.querySelectorAll('.item-medidor')].find(card => {
+                const botao = card.querySelector('.btn-salvar');
+                return botao && botao.getAttribute('onclick')?.includes(String(item.numero));
+            });
+            const topoAntes = cartaoAlvo ? cartaoAlvo.getBoundingClientRect().top : null;
+
             salvos.unshift(item);
             localStorage.setItem('medidoresSelecionados', JSON.stringify(salvos));
             renderizarSalvos();
@@ -561,6 +569,14 @@
                     botao.outerHTML = '<button class="btn-acao btn-salvar" disabled style="opacity:.7;cursor:not-allowed">✓ Já salvo</button>';
                 }
             });
+
+            // Reposiciona a página para manter o cartão tocado no mesmo lugar da tela.
+            if (cartaoAlvo && topoAntes !== null) {
+                requestAnimationFrame(() => {
+                    const topoDepois = cartaoAlvo.getBoundingClientRect().top;
+                    window.scrollBy(0, topoDepois - topoAntes);
+                });
+            }
         }
 
         function removerMedidor(numero) {
