@@ -733,6 +733,20 @@
             if(confirm("Limpar lista de exportação?")) {
                 localStorage.removeItem('medidoresSelecionados');
                 renderizarSalvos();
+
+                // Atualiza os cartões das buscas para liberar novamente o botão Salvar.
+                document.querySelectorAll('#listaResultados .item-medidor, #resultadosLote .item-medidor').forEach(card => {
+                    const cabecalho = card.querySelector('.cabecalho-card');
+                    const numero = card.querySelector('.info-numero')?.textContent?.trim();
+                    const acoes = card.querySelector('.acoes-card');
+
+                    if (!cabecalho || !numero || !acoes) return;
+
+                    const botaoSalvar = acoes.querySelector('.btn-salvar');
+                    if (botaoSalvar && botaoSalvar.disabled) {
+                        botaoSalvar.outerHTML = `<button class="btn-acao btn-salvar" onclick="salvarMedidor('${JSON.stringify({numero}).replace(/"/g, '&quot;')}')">⭐ Salvar</button>`;
+                    }
+                });
             }
         }
 
