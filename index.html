@@ -48,7 +48,7 @@
         .header-title { margin: 0 0 5px 0; font-size: 1.5rem; text-align: center; }
         .header-subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px; text-align: center; }
 
-        select, input {
+        select, input, textarea {
             padding: 12px;
             font-size: 15px;
             width: 100%;
@@ -60,7 +60,29 @@
             box-sizing: border-box;
         }
         
-        input:focus, select:focus { border-color: var(--primary); }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); }
+        textarea {
+            font-family: inherit;
+            font-size: 14px;
+            width: 100%;
+            min-height: 130px;
+            margin-bottom: 10px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            box-sizing: border-box;
+            outline: none;
+            resize: vertical;
+        }
+        .secao-lote {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+        .secao-lote h3 { margin: 0 0 6px; font-size: 1rem; }
+        .ajuda-lote { color: var(--text-muted); font-size: 12px; line-height: 1.5; margin: 0 0 12px; }
+        .grupo-lote { margin: 14px 0 18px; }
+        .titulo-grupo-lote { font-size: 13px; font-weight: 700; margin-bottom: 8px; color: var(--text-main); }
+        .nao-encontrado { padding: 12px; border: 1px solid #fecaca; background: #fff7f7; color: #b91c1c; border-radius: 9px; font-size: 13px; }
 
         .botoes-grupo { display: flex; gap: 10px; margin-bottom: 10px; }
         button { padding: 14px; font-size: 16px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; transition: 0.2s; }
@@ -167,7 +189,8 @@
 
         <select id="tipoBusca" onchange="document.getElementById('inputBusca').focus()">
             <option value="numero">Nº do Medidor</option>
-            <option value="PG">ID do Poste (PG)</option> 
+            <option value="PG">ID do Poste (PG)</option>
+            <option value="instal">Instalação</option> 
         </select>
 
         <input type="text" id="inputBusca" placeholder="Digite para buscar..." autocomplete="off">
@@ -178,7 +201,22 @@
         </div>
         
         <div id="mensagem"></div>
-        <div id="listaResultados"></div> 
+        <div id="listaResultados"></div>
+
+        <section class="secao-lote">
+            <h3>📋 Busca por lista de instalações</h3>
+            <p class="ajuda-lote">Cole ou digite várias instalações. Você pode separar por linhas, vírgulas ou ponto e vírgula. A busca considera o final de cada instalação, como na pesquisa individual.</p>
+            <textarea id="listaInstalacoes" placeholder="Exemplo:
+1234569226
+9876543210
+4567890123"></textarea>
+            <div class="botoes-grupo">
+                <button class="btn-buscar" onclick="buscarListaInstalacoes()">Buscar lista</button>
+                <button class="btn-limpar" onclick="limparListaInstalacoes()">Limpar</button>
+            </div>
+            <div id="mensagemLote"></div>
+            <div id="resultadosLote"></div>
+        </section>
     </div>
 
     <script>
@@ -200,15 +238,30 @@
             divMsg.innerHTML = "🔍 Buscando...";
 
             try {
-                let padrao = tipoBusca === 'numero' ? `%${input}` : `%${input}%`;
-                const { data, error } = await clienteSupabase.from('medidores')
-                    .select('*').ilike(tipoBusca, padrao).limit(15);
+                // Instalação consulta exclusivamente a tabela "repasses", pela coluna "instal".
+                // As buscas de medidor e poste continuam consultando a tabela "medidores".
+                const tabela = tipoBusca === 'instal' ? 'repasses' : 'medidores';
+                const coluna = tipoBusca === 'instal' ? 'instal' : tipoBusca;
+                // Nº do medidor e Instalação: considera apenas valores que TERMINAM com os dígitos informados.
+                // ID do poste: mantém a busca parcial em qualquer posição.
+                const padrao = (tipoBusca === 'numero' || tipoBusca === 'instal') ? `%${input}` : `%${input}%`;
+
+                const { data, error } = await clienteSupabase.from(tabela)
+                    .select('*').ilike(coluna, padrao).limit(15);
 
                 if (error) throw error;
 
-                if (data.length > 0) {
-                    divMsg.innerHTML = `<span style="color:var(--success)">${data.length} Encontrado(s)</span>`;
-                    data.forEach(item => {
+                if (data && data.length > 0) {
+                    const campoUnico = tipoBusca === 'instal' ? 'instal' : 'numero';
+                    const vistos = new Set();
+                    const unicos = data.filter(item => {
+                        const chave = String(item[campoUnico] ?? '').trim();
+                        if (!chave || vistos.has(chave)) return false;
+                        vistos.add(chave);
+                        return true;
+                    });
+                    divMsg.innerHTML = `<span style="color:var(--success)">${unicos.length} Encontrado(s) único(s)</span>`;
+                    unicos.forEach(item => {
                         divRes.innerHTML += criarCard(item, false);
                     });
                 } else {
@@ -217,6 +270,84 @@
             } catch (err) {
                 divMsg.innerHTML = "❌ Erro de conexão.";
             }
+        }
+
+        // Busca em lote: cada instalação é pesquisada pelo sufixo na tabela repasses.
+        // Se houver mais de um medidor para a mesma instalação, todos são exibidos.
+        async function buscarListaInstalacoes() {
+            const texto = document.getElementById('listaInstalacoes').value;
+            const divMsg = document.getElementById('mensagemLote');
+            const divResultados = document.getElementById('resultadosLote');
+            const instalacoes = [...new Set(texto.split(/[\n,;\t]+/).map(v => v.trim()).filter(Boolean))];
+
+            divResultados.innerHTML = '';
+            if (instalacoes.length === 0) {
+                divMsg.innerHTML = '❌ Cole ou digite pelo menos uma instalação.';
+                return;
+            }
+
+            divMsg.innerHTML = '🔍 Consultando instalações...';
+            let totalMedidores = 0;
+            let totalNaoEncontradas = 0;
+
+            try {
+                for (const instal of instalacoes) {
+                    let registros = [];
+                    let inicio = 0;
+                    const tamanhoPagina = 1000;
+
+                    // Pagina os resultados para não deixar medidores de fora em instalações numerosas.
+                    while (true) {
+                        const { data, error } = await clienteSupabase
+                            .from('repasses')
+                            .select('*')
+                            .ilike('instal', `%${instal}`)
+                            .range(inicio, inicio + tamanhoPagina - 1);
+
+                        if (error) throw error;
+                        registros = registros.concat(data || []);
+                        if (!data || data.length < tamanhoPagina) break;
+                        inicio += tamanhoPagina;
+                    }
+
+                    const grupo = document.createElement('div');
+                    grupo.className = 'grupo-lote';
+                    const titulo = document.createElement('div');
+                    titulo.className = 'titulo-grupo-lote';
+                    titulo.textContent = `Instalação informada: ${instal}`;
+                    grupo.appendChild(titulo);
+
+                    if (registros.length > 0) {
+                        // Se a instalação estiver repetida no banco, mostrar somente o primeiro registro.
+                        totalMedidores++;
+                        const card = document.createElement('div');
+                        card.innerHTML = criarCard(registros[0], false);
+                        grupo.appendChild(card.firstElementChild);
+                    } else {
+                        totalNaoEncontradas++;
+                        const aviso = document.createElement('div');
+                        aviso.className = 'nao-encontrado';
+                        aviso.textContent = 'Não encontrado';
+                        grupo.appendChild(aviso);
+                    }
+
+                    divResultados.appendChild(grupo);
+                }
+
+                divMsg.innerHTML = `<span style="color:var(--success)">${totalMedidores} medidor(es) encontrado(s)</span> · ${totalNaoEncontradas} instalação(ões) não encontrada(s)`;
+            } catch (err) {
+                console.error('Erro na busca em lote:', err);
+                divMsg.innerHTML = '❌ Erro ao consultar a lista. Verifique a conexão e as permissões da tabela repasses.';
+            }
+        }
+
+        function limparListaInstalacoes() {
+            const caixa = document.getElementById('listaInstalacoes');
+            caixa.value = '';
+            document.getElementById('mensagemLote').innerHTML = '';
+            document.getElementById('resultadosLote').innerHTML = '';
+            // Deixa o cursor pronto para digitar/colar a próxima lista.
+            caixa.focus();
         }
 
         function criarCard(item, eSalvo) {
@@ -229,11 +360,16 @@
             return `
                 <div class="item-medidor">
                     <div class="cabecalho-card">
-                        <span class="info-numero">${item.numero}</span>
+                        <div style="display:flex; flex-direction:column; align-items:flex-start;">
+                            <span class="info-numero">${item.numero || 'N/D'}</span>
+                            ${item.instal ? `<span style="margin-top:3px; font-size:12px; color:var(--text-muted);">Instalação: ${item.instal}</span>` : ''}
+                        </div>
                         <div class="acoes-card">
-                            ${eSalvo 
+                            ${eSalvo
                                 ? `<button class="btn-acao btn-remover" onclick="removerMedidor('${item.numero}')">🗑️</button>`
-                                : `<button class="btn-acao btn-salvar" onclick="salvarMedidor('${itemString}')">⭐ Salvar</button>`
+                                : medidorJaSalvo(item.numero)
+                                    ? `<button class="btn-acao btn-salvar" disabled style="opacity:.7;cursor:not-allowed">✓ Já salvo</button>`
+                                    : `<button class="btn-acao btn-salvar" onclick="salvarMedidor('${itemString}')">⭐ Salvar</button>`
                             }
                             <a href="${mapsUrl}" target="_blank" class="btn-acao btn-mapa">🗺️</a>
                         </div>
@@ -247,14 +383,31 @@
             `;
         }
 
+        function medidorJaSalvo(numero) {
+            const salvos = JSON.parse(localStorage.getItem('medidoresSelecionados')) || [];
+            return salvos.some(s => String(s.numero) === String(numero));
+        }
+
         function salvarMedidor(itemJson) {
             const item = JSON.parse(itemJson.replace(/&quot;/g, '"'));
             let salvos = JSON.parse(localStorage.getItem('medidoresSelecionados')) || [];
-            if (!salvos.some(s => s.numero === item.numero)) {
-                salvos.unshift(item);
-                localStorage.setItem('medidoresSelecionados', JSON.stringify(salvos));
-                renderizarSalvos();
+
+            if (salvos.some(s => String(s.numero) === String(item.numero))) {
+                alert('Este medidor já está salvo!');
+                return;
             }
+
+            salvos.unshift(item);
+            localStorage.setItem('medidoresSelecionados', JSON.stringify(salvos));
+            renderizarSalvos();
+
+            // Atualiza os cartões já exibidos para indicar que o medidor foi salvo.
+            document.querySelectorAll('.item-medidor').forEach(card => {
+                const botao = card.querySelector('.btn-salvar');
+                if (botao && botao.getAttribute('onclick')?.includes(String(item.numero))) {
+                    botao.outerHTML = '<button class="btn-acao btn-salvar" disabled style="opacity:.7;cursor:not-allowed">✓ Já salvo</button>';
+                }
+            });
         }
 
         function removerMedidor(numero) {
@@ -276,36 +429,97 @@
             lista.innerHTML = salvos.map(item => criarCard(item, true)).join('');
         }
 
-        function exportarParaCSV() {
+        async function exportarParaCSV() {
             const salvos = JSON.parse(localStorage.getItem('medidoresSelecionados')) || [];
             if (salvos.length === 0) return;
 
-            // Cabeçalho conforme seu exemplo
-            let csvContent = "Numero_Medidor,Latitude,Longitude,Rua,PG,MRU\n";
+            const botaoExportar = document.querySelector('.btn-exportar');
+            const textoOriginal = botaoExportar ? botaoExportar.textContent : '';
 
-            salvos.forEach(item => {
-                let lat = String(item.lat).replace(',', '.').trim();
-                let lng = String(item.lng).replace(',', '.').trim();
-                let rua = (item.Rua || "N/A").replace(/,/g, ''); // Remove vírgulas para não quebrar o CSV
-                
-                csvContent += `${item.numero},${lat},${lng},"${rua}",${item.PG || 'N/D'},${item.MRU || 'N/D'}\n`;
-            });
+            try {
+                if (botaoExportar) {
+                    botaoExportar.disabled = true;
+                    botaoExportar.textContent = '🔍 Conferindo instalações...';
+                }
 
-            // Criar o download do arquivo
-            const blob = new Blob(["\ufeff", csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", `medidores_my_maps_${new Date().getTime()}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+                // Os medidores salvos podem vir da tabela "medidores", que não possui
+                // necessariamente a coluna instal. Para completar o CSV, buscamos
+                // a instalação correspondente na tabela "repasses", pelo numero.
+                for (const item of salvos) {
+                    if (item.instal && String(item.instal).trim() !== '' && item.instal !== 'N/D') {
+                        continue;
+                    }
+
+                    const { data, error } = await clienteSupabase
+                        .from('repasses')
+                        .select('instal')
+                        .eq('numero', String(item.numero))
+                        .not('instal', 'is', null)
+                        .limit(1);
+
+                    if (error) throw error;
+
+                    if (data && data.length > 0 && data[0].instal != null) {
+                        item.instal = data[0].instal;
+                    } else {
+                        item.instal = 'N/D';
+                    }
+                }
+
+                // Atualiza os dados salvos no navegador com as instalações recuperadas.
+                localStorage.setItem('medidoresSelecionados', JSON.stringify(salvos));
+                renderizarSalvos();
+
+                const escaparCSV = valor => {
+                    const texto = String(valor ?? '');
+                    return `"${texto.replace(/"/g, '""')}"`;
+                };
+
+                let csvContent = "Numero_Medidor,Instal,Latitude,Longitude,Rua,PG,MRU\n";
+
+                salvos.forEach(item => {
+                    const lat = String(item.lat ?? '').replace(',', '.').trim();
+                    const lng = String(item.lng ?? '').replace(',', '.').trim();
+
+                    csvContent += [
+                        escaparCSV(item.numero || 'N/D'),
+                        escaparCSV(item.instal || 'N/D'),
+                        escaparCSV(lat),
+                        escaparCSV(lng),
+                        escaparCSV(item.Rua || 'N/A'),
+                        escaparCSV(item.PG || 'N/D'),
+                        escaparCSV(item.MRU || 'N/D')
+                    ].join(',') + '\n';
+                });
+
+                const blob = new Blob(["\ufeff", csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `medidores_my_maps_${Date.now()}.csv`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+            } catch (err) {
+                console.error('Erro ao completar instalações para o CSV:', err);
+                alert('Não foi possível buscar as instalações na tabela repasses. Erro: ' + (err.message || 'Erro desconhecido'));
+            } finally {
+                if (botaoExportar) {
+                    botaoExportar.disabled = false;
+                    botaoExportar.textContent = textoOriginal;
+                }
+            }
         }
 
         function limparBusca() {
-            document.getElementById('inputBusca').value = '';
+            const caixa = document.getElementById('inputBusca');
+            caixa.value = '';
             document.getElementById('listaResultados').innerHTML = '';
             document.getElementById('mensagem').innerHTML = '';
+            // Deixa o cursor pronto para digitar o próximo número.
+            caixa.focus();
         }
 
         function limparTudoSalvo() {
