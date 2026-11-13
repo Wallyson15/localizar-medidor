@@ -301,6 +301,44 @@
             }
         }
 
+    
+        /* Botão flutuante para voltar ao topo */
+        .btn-voltar-topo {
+            position: fixed;
+            right: 18px;
+            bottom: max(18px, env(safe-area-inset-bottom));
+            z-index: 999;
+            width: 42px;
+            height: 42px;
+            min-height: 42px;
+            padding: 0;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 3px 12px rgba(15, 23, 42, 0.25);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 21px;
+            line-height: 1;
+            opacity: 0.92;
+            touch-action: manipulation;
+        }
+
+        .btn-voltar-topo:hover {
+            background: var(--primary-hover);
+        }
+
+        @media (max-width: 600px) {
+            .btn-voltar-topo {
+                right: 14px;
+                bottom: max(14px, env(safe-area-inset-bottom));
+                width: 40px;
+                height: 40px;
+                min-height: 40px;
+            }
+        }
+
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -701,6 +739,22 @@
         document.getElementById('inputBusca').addEventListener('keypress', e => {
             if (e.key === 'Enter') buscarDados();
         });
+    
+        // Exibe o botão somente depois que a página começa a rolar.
+        window.addEventListener('scroll', () => {
+            const botaoTopo = document.getElementById('btnVoltarTopo');
+            if (botaoTopo) {
+                botaoTopo.style.display = window.scrollY > 250 ? 'flex' : 'none';
+            }
+        }, { passive: true });
+
     </script>
+
+    <button type="button" id="btnVoltarTopo" class="btn-voltar-topo"
+            aria-label="Voltar ao topo" title="Voltar ao topo"
+            onclick="window.scrollTo({ top: 0, behavior: 'smooth' })">
+        ↑
+    </button>
+
 </body>
 </html>
