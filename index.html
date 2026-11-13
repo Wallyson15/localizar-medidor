@@ -341,7 +341,13 @@
         <div id="mensagem"></div>
         <div id="listaResultados"></div>
 
-        <section class="secao-lote">
+        <button type="button" class="btn-limpar" id="btnAlternarBuscaLote"
+                onclick="alternarBuscaLista()" aria-expanded="false"
+                style="width:100%; margin-top:18px;">
+            ＋ Mostrar busca por lista
+        </button>
+
+        <section class="secao-lote" id="secaoBuscaLote" style="display:none;">
             <h3>📋 Busca por lista de instalações</h3>
             <p class="ajuda-lote">Cole ou digite várias instalações. Você pode separar por linhas, vírgulas ou ponto e vírgula. A busca considera instalação completa, como na pesquisa individual.</p>
             <textarea id="listaInstalacoes" placeholder="Exemplo:
@@ -477,6 +483,15 @@
                 console.error('Erro na busca em lote:', err);
                 divMsg.innerHTML = '❌ Erro ao consultar a lista. Verifique a conexão e as permissões da tabela repasses.';
             }
+        }
+
+        function alternarBuscaLista() {
+            const secao = document.getElementById('secaoBuscaLote');
+            const botao = document.getElementById('btnAlternarBuscaLote');
+            const vaiMostrar = secao.style.display === 'none';
+            secao.style.display = vaiMostrar ? 'block' : 'none';
+            botao.textContent = vaiMostrar ? '− Ocultar busca por lista' : '＋ Mostrar busca por lista';
+            botao.setAttribute('aria-expanded', String(vaiMostrar));
         }
 
         function limparListaInstalacoes() {
